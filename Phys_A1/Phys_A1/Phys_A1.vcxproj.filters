@@ -24,6 +24,9 @@
     <ClInclude Include="Phys_A1.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Phys_A2.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -33,6 +36,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Phys_A2.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
