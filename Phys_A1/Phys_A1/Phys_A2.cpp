@@ -153,7 +153,6 @@ namespace
 			}
 
 			if((boxPosition - boxStartPosition).length() > 12.f)
-			//if (boxPosition.y <= boxStartPosition.y - 12.f)
 			{
 				std::printf("Box Speed After traveling 12m downwards : %f\n", boxSpeed);
 				break;
@@ -209,11 +208,11 @@ namespace
 		constexpr float tickRate = 0.001f;
 		constexpr float simulationSeconds = 5.f;
 		constexpr int ticks = simulationSeconds / tickRate + 1;
-		float secondsPassed = 0.f;
 		const float measuredTimeSpan = 0.1f;
 		float secondsPassedSinceMeasurement = 0.f;
 		rp3d::Vector3 boxHighestPoint;
 
+		int totalTicks = 0;
 		while (true) {
 			
 			world.update(tickRate);
@@ -225,19 +224,18 @@ namespace
 			{
 				boxHighestPoint = boxPosition;
 			}
-
-			secondsPassed += tickRate;
+			++totalTicks;
 			secondsPassedSinceMeasurement += tickRate;
 
-			if ((boxPosition.x > boxStartPosition.x) < 0.01 && boxVelocity.y < 0)
+			if (std::abs(boxPosition.x - boxStartPosition.x) < 0.01 && boxVelocity.y < 0)
 			{
 				const float upwardsDisanceTravelled = (boxStartPosition - boxHighestPoint).length();
 
-				std::printf("Box went %f meters upward\nBox reached initial location after %f seconds\n", upwardsDisanceTravelled, secondsPassed);
+				std::printf("Box went %f meters upward\nBox reached initial location after %f seconds\n", upwardsDisanceTravelled, totalTicks * tickRate);
 				break;
 			}
 
-			if (secondsPassedSinceMeasurement > measuredTimeSpan) {
+			/*if (secondsPassedSinceMeasurement > measuredTimeSpan) {
 				float currentSpeed = box->getLinearVelocity().length();
 				float deltaSpeed = currentSpeed - lastSpeed;
 				lastSpeed = currentSpeed;
@@ -245,7 +243,7 @@ namespace
 
 				float boxAcceleration = deltaSpeed / measuredTimeSpan;
 				std::printf("Acceleration: %f\n", boxAcceleration);
-			}
+			}*/
 		}
 	}
 
@@ -256,9 +254,10 @@ namespace
 		rp3d::DynamicsWorld world(earthGravity);
 		world.setNbIterationsVelocitySolver(15);
 
-		float inclineDegrees = 22.f;
-		float boxWeight = 7.f;
-		float frictionCoefficient = 0.19f;
+		const float inclineDegrees = 25.f;
+		const float boxWeight = 7.f;
+		const float frictionCoefficient = 0.19f;
+		const float downwardsDistance = 8.15;
 
 		const rp3d::Quaternion slopeOrientation(rp3d::Vector3(0, 0, -DegToRad(inclineDegrees)));
 
@@ -294,7 +293,7 @@ namespace
 		constexpr float simulationSeconds = 5.f;
 		constexpr int ticks = simulationSeconds / tickRate + 1;
 		float secondsPassed = 0.f;
-		const float measuredTimeSpan = 1.0f;
+		const float measuredTimeSpan = 1.f;
 
 		//Main Loop
 		while (true) {
@@ -315,7 +314,7 @@ namespace
 				std::printf("Acceleration: %f\n", boxAcceleration);
 			}
 
-			if ((boxPosition - boxStartPosition).length() > 8.5f)
+			if ((boxPosition - boxStartPosition).length() > downwardsDistance)
 			{
 				std::printf("Box Speed After traveling 8.5 m downwards : %f\n", boxSpeed);
 				break;
@@ -324,7 +323,6 @@ namespace
 			
 		}
 	}
-
 
 	void Phys_A2_5()
 	{
@@ -376,7 +374,7 @@ namespace
 		constexpr int ticks = simulationSeconds / tickRate + 1;
 		float secondsPassed = 0.f;
 		float secondsPassedSinceMeasurement = 0.f;
-		const float measuredTimeSpan = 0.02f;
+		const float measuredTimeSpan = 1.f;
 
 		rp3d::Vector3 boxHighestPoint;
 
@@ -405,7 +403,7 @@ namespace
 				break;
 			}
 
-			if (secondsPassedSinceMeasurement > measuredTimeSpan) {
+			/*if (secondsPassedSinceMeasurement > measuredTimeSpan) {
 				float currentSpeed = box->getLinearVelocity().length();
 				float deltaSpeed = currentSpeed - lastSpeed;
 				lastSpeed = currentSpeed;
@@ -413,7 +411,7 @@ namespace
 
 				float boxAcceleration = deltaSpeed / measuredTimeSpan;
 				std::printf("Acceleration: %f\n", boxAcceleration);
-			}
+			}*/
 		}
 	}
 
