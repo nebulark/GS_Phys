@@ -16,7 +16,7 @@ namespace
 
 	void Phys_A3_1()
 	{
-		std::puts(" === Phys A3 1) === ");
+		std::puts("\n === Phys A3 1) === ");
 		rp3d::DynamicsWorld world(rp3d::Vector3::zero());
 		world.setNbIterationsVelocitySolver(15);
 
@@ -60,7 +60,7 @@ namespace
 	}
 	void Phys_A3_2()
 	{
-		std::puts(" === Phys A3 2) === ");
+		std::puts("\n === Phys A3 2) === ");
 		rp3d::DynamicsWorld world(rp3d::Vector3::zero());
 		world.setNbIterationsVelocitySolver(15);
 
@@ -78,7 +78,7 @@ namespace
 		comet->setMass(1.f);
 		comet->enableGravity(false);
 
-		constexpr float tickRate = 10'000.f;
+		constexpr float tickRate = 100'000.f;
 		constexpr float secondsInYear = 365.24f * 24.f * 60.f * 60.f;
 		constexpr float simulationSeconds = secondsInYear * 2400.f;
 		const int ticks = static_cast<int>(std::ceil(simulationSeconds * 1.1f / tickRate));
@@ -96,7 +96,7 @@ namespace
 			if (hasHadNegativeXPos && cometPos.x >= 0)
 			{
 				const float timeTaken = i * tickRate;
-				std::printf("the comet is took %e seconds / %f years \n", timeTaken, timeTaken / secondsInYear);
+				std::printf("the comet is took %e seconds / %f years\n", timeTaken, timeTaken / secondsInYear);
 				break;
 			}
 			const float distance = cometPos.length();
@@ -115,7 +115,7 @@ namespace
 
 	void Phys_A3_3()
 	{
-		std::puts(" === Phys A3 3) === ");
+		std::puts("\n === Phys A3 3) === ");
 
 		const rp3d::Vector3 boxHalfExtents(0.5, 0.5, 0.5);
 		const rp3d::Vector3 slopeHalfExtents(100.0, 1.0, 3.0);
@@ -185,14 +185,17 @@ namespace
 
 			const rp3d::Vector3 newBoxVelocity = box->getLinearVelocity();
 
-			std::printf("Box Velocity = (%f, %f) \n", newBoxVelocity.x, newBoxVelocity.y);
+			if (i % (ticks / 4) == 0)
+			{
+				std::printf("Box Velocity = (%f, %f) \n", newBoxVelocity.x, newBoxVelocity.y);
+			}
 			
 		}
 	}
 
 	void Phys_A3_5()
 	{
-		std::puts(" === Phys A3 5) === ");
+		std::puts("\n === Phys A3 5) === ");
 
 		rp3d::DynamicsWorld world(earthGravity);
 		world.setNbIterationsVelocitySolver(15);
@@ -253,8 +256,8 @@ namespace
 
 void Phys_A3()
 {
-	//Phys_A3_1();
-	//Phys_A3_2();
+	Phys_A3_1();
+	Phys_A3_2();
 	Phys_A3_3();
-	//Phys_A3_5();
+	Phys_A3_5();
 }
