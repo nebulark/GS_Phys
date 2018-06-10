@@ -61,7 +61,7 @@ namespace
 		const rp3d::Vector3 attractionVector = relativeAttractionVector * totalForce;
 
 		// the more perpendicular, the higher the z component of the resulting vector, also has the right direction sign
-		const rp3d::Vector3 relativeTorqueVector = FerroMagnetMagnetizationDirection.cross(PendulumMagnetizationDirection);
+		const rp3d::Vector3 relativeTorqueVector = (PendulumMagnetizationDirection).cross(FerroMagnetMagnetizationDirection);
 		const rp3d::Vector3 TorqueVector = relativeTorqueVector * totalForce;
 
 		return { attractionVector, TorqueVector };
@@ -121,7 +121,7 @@ void Simulation::Init()
 	m_pendulum = m_world.createRigidBody(pendulumStartTransform);
 	m_pendulum->setInertiaTensorLocal(rp3d::Matrix3x3::identity());
 
-	m_dummyBody = m_world.createRigidBody(rp3d::Transform(rp3d::Vector3(0.f, 100.f, 0.f),
+	m_dummyBody = m_world.createRigidBody(rp3d::Transform(rp3d::Vector3(0.f, 0.f, 0.f),
 		rp3d::Quaternion(0.f, 0.f, 0.f)));
 	
 
@@ -142,12 +142,13 @@ void Simulation::Update(float deltaTime)
 	const rp3d::Vector3 pendulumMagnetizationDirection = CalcForwardVector(pendulumTranform);
 
 	AttractionAndTorque forcesOnPendulum = CalcFerroMagnetAttractionAndTorque(pendulumPosition,
-		pendulumMagnetizationDirection.getOneUnitOrthogonalVector(), 1.f,
+		pendulumMagnetizationDirection, 1.f,
 		m_ferroMagnetPosition, m_ferroMagnetMagnetizationDirection, m_ferroMagnetForceStrenth);
 
-
+	
 	m_pendulum->applyForceToCenterOfMass(forcesOnPendulum.attraction);
-	//m_pendulum->applyTorque(forcesOnPendulum.torque);
+	m_pendulum->applyTorque(forcesOnPendulum.torque);
+	m_pendulum->setLinearDamping(0.f);
 
 	m_world.update(deltaTime);
 }
@@ -207,6 +208,6 @@ void Simulation::Render(sf::RenderWindow& renderWindow)
 		rp3d::Vector3 velocity = m_pendulum->getLinearVelocity();
 		sf::Vector2f sfVelocity(velocity.x, velocity.y);
 		DrawArrow(renderWindow, sfpendulumPosition, sfpendulumPosition + sfVelocity * DrawDistanceForForces, sf::Color::Cyan);
-
+		DrawArrow(renderWindow, sfpendulumPosition, sfpendulumPosition + sf::Vector2f(0.f,gravity.y) * DrawDistanceForForces, sf::Color::Blue);
 	}
 }
