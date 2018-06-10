@@ -18,20 +18,22 @@ namespace
 		return rp3d::Vector2(std::cos(Radians), std::sin(Radians));
 	}
 
-	const rp3d::Vector3 gravity(0.f, 9.81f, 0.f);
+	const float Meter = 100;
+
+	const rp3d::Vector3 gravity = rp3d::Vector3(0.f, 9.81f , 0.f) * Meter;
 	const float pendulumStartingAngle = DegreesToRadians(-1.f);
-	const float pendulumLength = 400.f;
-	const rp3d::Vector2 pendulumAnchorPostion(0.f, 0.f);
+	const float pendulumLength = 4.f * Meter;
+	const rp3d::Vector2 pendulumAnchorPostion = rp3d::Vector2(0.f, -3.f) * Meter;
 	const rp3d::Vector2 pendulumStartingOffset = RadiansToVector(pendulumStartingAngle) * pendulumLength;
 }
 
 
 Simulation::Simulation()
 	: m_world(gravity)
-	, m_metalBlockPosition(0.f, 400.f)
+	, m_metalBlockPosition(0.f, 4 * Meter)
 	, m_metalBlockShape(sf::Vector2f(50.f,50.f))
 	, m_pendulumShape(sf::Vector2f(50.f, 50.f))
-	, m_pendulumAnchorShape(50.f)
+	, m_pendulumAnchorShape(20.f)
 {
 }
 
