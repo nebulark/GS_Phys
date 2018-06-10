@@ -21,13 +21,17 @@ public:
 private:
 	rp3d::DynamicsWorld m_world;
 
-	sf::Vector2f m_metalBlockPosition;
-	sf::RectangleShape m_metalBlockShape;
+	sf::RectangleShape m_ferroMagnetShape;
 	sf::RectangleShape m_pendulumShape;
 	sf::CircleShape m_pendulumAnchorShape;
 
 	rp3d::RigidBody* m_dummyBody;
 	rp3d::RigidBody* m_pendulum;
 	rp3d::HingeJoint* m_pendulumJoint;
+
+	float m_ferroMagnetForceStrenth;
+	rp3d::Vector3 m_ferroMagnetMagnetizationDirection;
+	rp3d::Vector3 m_ferroMagnetPosition;
+
 };
 

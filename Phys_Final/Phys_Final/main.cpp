@@ -6,10 +6,11 @@
 
 int main()
 {
-
-	sf::RenderWindow window(sf::VideoMode(1200, 900), "SFML works!");
+	const sf::Vector2i windowSize(1200, 800);
+	sf::RenderWindow window(sf::VideoMode(windowSize.x, windowSize.y), "SFML works!");
 	auto view = window.getView();
 	view.setCenter(sf::Vector2f(0.f, 0.f));
+	view.setSize(sf::Vector2f(windowSize * 2));
 	window.setView(view);
 
 	Simulation simulation;
