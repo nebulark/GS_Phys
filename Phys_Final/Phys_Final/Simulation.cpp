@@ -108,7 +108,7 @@ Simulation::Simulation()
 	, m_ferroMagnetShape(sf::Vector2f(50.f,50.f))
 	, m_pendulumShape(sf::Vector2f(50.f, 50.f))
 	, m_pendulumAnchorShape(20.f)
-	, m_pendulumMagneticStrength(20.f)
+	, m_pendulumMagneticStrength(40.f)
 	, m_ferroMagnetMagnetizationVector(RadiansToVectorRotateInZAxis(DegreesToRadians(30.f)))
 {
 }
@@ -122,7 +122,7 @@ void Simulation::Init()
 	m_pendulum = m_world.createRigidBody(pendulumStartTransform);
 	m_pendulum->setInertiaTensorLocal(rp3d::Matrix3x3::identity());
 
-	m_dummyBody = m_world.createRigidBody(rp3d::Transform(rp3d::Vector3(0.f, 0.f, 0.f),
+	m_dummyBody = m_world.createRigidBody(rp3d::Transform(rp3d::Vector3(pendulumAnchorPostion),
 		rp3d::Quaternion(0.f, 0.f, 0.f)));
 	
 
@@ -162,11 +162,16 @@ void Simulation::Update(float deltaTime)
 	const float pendulumMagnetisationEffect = 1 / (1 + distancePendulumFerroSq);
 
 	// how much the ferromagnet wants to change, the more magnetized the less he wants to change
-	const float ferroMagnetizationChangeRate = 1 / (1 + (std::pow(FerroMagneticStrengthSq, 1)));
+	const float ferroMagnetizationChangeRate = 1/ (1 + (FerroMagneticStrength));
 
-	constexpr float LearnRateModifer = 10.f;
+	const rp3d::Vector3 ferroMagnetizationDir = m_ferroMagnetMagnetizationVector / FerroMagneticStrength;
+	const float currentFerroAngleRad = VectorZAxisRotationInRadians(ferroMagnetizationDir);
+	const float pendulumMagnetizationAngleRad = VectorZAxisRotationInRadians(pendulumMagnetizationDirection);
 
-	const float totalChangeRate = pendulumMagnetisationEffect * ferroMagnetizationChangeRate * deltaTime * LearnRateModifer;
+	constexpr float LearnRateModifer = 1.f;
+
+	float totalChangeRate = pendulumMagnetisationEffect * ferroMagnetizationChangeRate * deltaTime * LearnRateModifer;
+
 
 	// mix, old vector with new Vector
 	m_ferroMagnetMagnetizationVector = 
@@ -175,6 +180,9 @@ void Simulation::Update(float deltaTime)
 
 
 	m_world.update(deltaTime);
+
+	// TODO
+	// magnetization direction seperately from strength
 }
 
 void Simulation::Render(sf::RenderWindow& renderWindow)
