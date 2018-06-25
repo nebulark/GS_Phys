@@ -108,8 +108,12 @@ Simulation::Simulation()
 	, m_ferroMagnetShape(sf::Vector2f(50.f,50.f))
 	, m_pendulumShape(sf::Vector2f(50.f, 50.f))
 	, m_pendulumAnchorShape(20.f)
-	, m_pendulumMagneticStrength(100.f)
+	, m_pendulumMagneticStrength(10.f)
 	, m_ferroMagnetMagnetizationVector(RadiansToVectorRotateInZAxis(DegreesToRadians(30.f)))
+	, m_ferroMagnetCurrentResidualStrength(0.f)
+	, m_ferroMagnetMaxResidualStrength(20.f)
+	, m_ferroMagnetMaxStrength(100.f)
+	, m_ferroMagnetMaxExternalStrength(10.f)
 {
 }
 
@@ -145,88 +149,26 @@ void Simulation::Update(float deltaTime)
 	const rp3d::Vector3 pendulumPosition = pendulumTranform.getPosition();
 	const rp3d::Vector3 pendulumMagnetizationDirection = CalcForwardVector(pendulumTranform);
 
+	rp3d::Vector3 ferroMagnetPosition = m_ferroMagnet.GetPosition();
+	rp3d::Vector3 ferroMagnetizationVector = m_ferroMagnet.GetMagnetizationVector();
+
 	// update Pendulum
-	const float FerroMagneticStrengthSq = m_ferroMagnetMagnetizationVector.lengthSquare();
+	const float FerroMagneticStrengthSq = ferroMagnetizationVector.lengthSquare();
 	const float FerroMagneticStrength = std::sqrt(FerroMagneticStrengthSq);
-	const rp3d::Vector3 FerroMagnetDir = m_ferroMagnetMagnetizationVector / FerroMagneticStrength;
+	const rp3d::Vector3 FerroMagnetDir = ferroMagnetizationVector / FerroMagneticStrength;
 	AttractionAndTorque forcesOnPendulum = CalcFerroMagnetAttractionAndTorque(pendulumPosition,
 		pendulumMagnetizationDirection, m_pendulumMagneticStrength,
-		m_ferroMagnetPosition, FerroMagnetDir, FerroMagneticStrength);
+		ferroMagnetPosition, FerroMagnetDir, FerroMagneticStrength);
 	
 	m_pendulum->applyForceToCenterOfMass(forcesOnPendulum.attraction);
 
 	// exaggerate for more visible effect;
-	constexpr float torqueStrenthModifer = 4.f;
+	constexpr float torqueStrenthModifer = 1.f;
 	m_pendulum->applyTorque(forcesOnPendulum.torque * torqueStrenthModifer);
 
-	// ferromagnet
-	const rp3d::Vector3 pendulumMagnetizationVector = pendulumMagnetizationDirection * m_pendulumMagneticStrength;
-	const float distancePendulumFerroSq = (pendulumPosition - m_ferroMagnetPosition).lengthSquare();
-	const float distancePendulumFerro = std::sqrt(distancePendulumFerroSq);
-	// the nearer it is the more effect it has
-	const float pendulumMagnetisationEffect = 1 / (1 + distancePendulumFerro);
 
-	// how much the ferromagnet wants to change, the more magnetized the less he wants to change
-	const float ferroMagnetizationChangeRate = 1 / (1 + (FerroMagneticStrength));
-
-	const rp3d::Vector3 ferroMagnetizationDir = m_ferroMagnetMagnetizationVector / FerroMagneticStrength;
-	const float currentFerroAngleRad = VectorZAxisRotationInRadians(ferroMagnetizationDir);
-	const float pendulumMagnetizationAngleRad = VectorZAxisRotationInRadians(pendulumMagnetizationDirection);
-
-	const float PendulumSpeed = m_pendulum->getLinearVelocity().length();
-
-	// e^-inf = 0 so we get 1
-	// e^0 = 1 so we get 0
-	const float speedModifier = 1.f - std::exp(-PendulumSpeed);
-
-
-	// if positive we expect to have an increase in magnetization
-	// if negative we expect to have a decrease in magnetization
-	// actual value has no real meaning besides this
-	float magnetizationIncrease = pendulumMagnetizationDirection.dot(FerroMagnetDir);
-
-	// clamp to remove dot product round errors
-	assert(-1.001f <= magnetizationIncrease && magnetizationIncrease <= 1.001f);
-	magnetizationIncrease = std::max(-1.f, std::min(magnetizationIncrease, 1.f));
-
-
-	// is 1 if magnetizationIncrease,
-	// over 1 if it is an increase so it magnetizes faster,
-	// lower than one if decrease so it demagnetizes slower
-	// is never negative
-	// times 3 so we are more curvy
-	// just add 1 so we are in the range form 0 - 2, the divived by 2
-	const float hysteresisModifier = (std::pow(magnetizationIncrease, 3) + 1.f) / 2.f;
-	assert(0.f <= hysteresisModifier && hysteresisModifier <= 2.f);
-
-
-	assert(0.f <= pendulumMagnetisationEffect && pendulumMagnetisationEffect <= 1.f);
-	assert(0.f <= ferroMagnetizationChangeRate && ferroMagnetizationChangeRate <= 1.f);
-	assert(0.f <= hysteresisModifier && hysteresisModifier <= 1.f);
-	assert(0.f <= speedModifier && speedModifier <= 1.f);
-
-
-	//const float SummedModiersMultiplicative = 1.f
-	//	* (1.f + pendulumMagnetisationEffect)
-	//	* (1.f + ferroMagnetizationChangeRate) 
-	//	* (1.f + hysteresisModifier) 
-	//	* (1.f + speedModifier)
-	//	;
-
-	const float SummedModiersAdditive = 1.f 
-		+ pendulumMagnetisationEffect 
-		+ ferroMagnetizationChangeRate
-		+ hysteresisModifier 
-		+ speedModifier
-		;
-
-	constexpr float LearnRateModifer = 0.01f;
-	float totalChangeRate = SummedModiersAdditive * deltaTime * LearnRateModifer;
-
-
-
-	m_ferroMagnetMagnetizationVector = (m_ferroMagnetMagnetizationVector * (1 - totalChangeRate))
-		                             + (pendulumMagnetizationVector)     * (totalChangeRate);
+	m_ferroMagnet.Update(pendulumPosition, pendulumMagnetizationDirection, m_pendulumMagneticStrength, deltaTime);
+	
 
 	m_world.update(deltaTime);
 
@@ -267,27 +209,16 @@ void Simulation::Render(sf::RenderWindow& renderWindow)
 		DrawArrow(renderWindow, sfpendulumPosition, endPos, sf::Color::Red);
 	}
 
-	sf::Vector2f sfFerroMagnetPositon = sf::Vector2f(m_ferroMagnetPosition.x , m_ferroMagnetPosition.y) * DrawDistanceForMeter;
+	rp3d::Vector3 ferroMagnetPosition = m_ferroMagnet.GetPosition();
+	rp3d::Vector3 ferroMagnetizationVector = m_ferroMagnet.GetMagnetizationVector();
+
+
+	sf::Vector2f sfFerroMagnetPositon = sf::Vector2f(ferroMagnetPosition.x , ferroMagnetPosition.y) * DrawDistanceForMeter;
 	m_ferroMagnetShape.setOrigin(m_ferroMagnetShape.getSize() / 2.f);
 	m_ferroMagnetShape.setPosition(sfFerroMagnetPositon);
 	renderWindow.draw(m_ferroMagnetShape);
 	{
-		sf::Vector2f endPos = sfFerroMagnetPositon + sf::Vector2f(m_ferroMagnetMagnetizationVector.x, m_ferroMagnetMagnetizationVector.y) * 5.f;
+		sf::Vector2f endPos = sfFerroMagnetPositon + sf::Vector2f(ferroMagnetizationVector.x, ferroMagnetizationVector.y) * 5.f;
 		DrawArrow(renderWindow, sfFerroMagnetPositon, endPos, sf::Color::Magenta);
 	}
-
-	/*{
-		AttractionAndTorque forcesOnPendulum = CalcFerroMagnetAttractionAndTorque(pendulumTranform.getPosition(),
-			pendulumMagnetizationDir, 1.f,
-			m_ferroMagnetPosition, m_ferroMagnetMagnetizationDirection, m_ferroMagnetForceStrenth);
-		sf::Vector2f endPosOffset = sf::Vector2f(forcesOnPendulum.attraction.x, forcesOnPendulum.attraction.y);
-
-		DrawArrow(renderWindow, sfpendulumPosition, sfpendulumPosition + endPosOffset * DrawDistanceForForces, sf::Color::Magenta);
-	}
-
-	{
-		rp3d::Vector3 velocity = m_pendulum->getLinearVelocity();
-		sf::Vector2f sfVelocity(velocity.x, velocity.y);
-		DrawArrow(renderWindow, sfpendulumPosition, sfpendulumPosition + sf::Vector2f(0.f,gravity.y) * DrawDistanceForForces, sf::Color::Blue);
-	}*/
 }

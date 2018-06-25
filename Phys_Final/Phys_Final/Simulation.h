@@ -1,5 +1,6 @@
 #pragma once
 #include "reactphysics3d.h"
+#include "FerroMagnet.h"
 #include <SFML/System/Vector2.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
 
@@ -30,8 +31,6 @@ private:
 	rp3d::RigidBody* m_pendulum;
 	rp3d::HingeJoint* m_pendulumJoint;
 
-	rp3d::Vector3 m_ferroMagnetMagnetizationVector;
-	rp3d::Vector3 m_ferroMagnetPosition;
-
+	FerroMagnet m_ferroMagnet;
 };
 
