@@ -157,7 +157,7 @@ void Simulation::Update(float deltaTime)
 	m_pendulum->applyForceToCenterOfMass(forcesOnPendulum.attraction);
 
 	// exaggerate for more visible effect;
-	constexpr float torqueStrenthModifer = 4.f;
+	constexpr float torqueStrenthModifer = 1.f;
 	m_pendulum->applyTorque(forcesOnPendulum.torque * torqueStrenthModifer);
 
 
@@ -165,9 +165,6 @@ void Simulation::Update(float deltaTime)
 	
 
 	m_world.update(deltaTime);
-
-	// TODO
-	// magnetization direction seperately from strength
 }
 
 void Simulation::Render(sf::RenderWindow& renderWindow)

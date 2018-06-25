@@ -5,6 +5,7 @@
 FerroMagnet::FerroMagnet()
 	: m_magnetizationVector(0.f,0.001f,0.f)
 	, m_currentResidualStrength(0.f)
+	, m_strengthMulitplier(5.f)
 	, m_residualFraction(0.5f)
 	, m_position(0.f, 2.f,0.f)
 {
