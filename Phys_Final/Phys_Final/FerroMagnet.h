@@ -3,7 +3,9 @@
 class FerroMagnet
 {
 public:
-	const rp3d::Vector3& GetPosition() { return m_ferroMagnetPosition; }
+	FerroMagnet();
+
+	const rp3d::Vector3& GetPosition() { return m_position; }
 	const rp3d::Vector3& GetMagnetizationVector() { return m_magnetizationVector; }
 
 	void Update(
@@ -17,10 +19,7 @@ private:
 	// if we remove external field right now how much residual strength would be left
 	float m_currentResidualStrength;
 
-	float m_maxStrength;
+	float m_residualFraction;
 
-	// how much external strength we need to reach max strength
-	float m_maxExternalStrength;
-
-	rp3d::Vector3 m_ferroMagnetPosition;
+	rp3d::Vector3 m_position;
 };

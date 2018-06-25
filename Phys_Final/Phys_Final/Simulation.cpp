@@ -104,16 +104,10 @@ namespace
 
 Simulation::Simulation()
 	: m_world(gravity)
-	, m_ferroMagnetPosition(0.f, 3.f, 0.f)
 	, m_ferroMagnetShape(sf::Vector2f(50.f,50.f))
 	, m_pendulumShape(sf::Vector2f(50.f, 50.f))
 	, m_pendulumAnchorShape(20.f)
-	, m_pendulumMagneticStrength(10.f)
-	, m_ferroMagnetMagnetizationVector(RadiansToVectorRotateInZAxis(DegreesToRadians(30.f)))
-	, m_ferroMagnetCurrentResidualStrength(0.f)
-	, m_ferroMagnetMaxResidualStrength(20.f)
-	, m_ferroMagnetMaxStrength(100.f)
-	, m_ferroMagnetMaxExternalStrength(10.f)
+	, m_pendulumMagneticStrength(40.f)
 {
 }
 
@@ -136,7 +130,7 @@ void Simulation::Init()
 		rp3d::Vector3( pendulumAnchorPostion.x, pendulumAnchorPostion.y,0.f), rp3d::Vector3(0.f, 0.f, 1.f));
 	m_pendulumJoint = static_cast<rp3d::HingeJoint*>(m_world.createJoint(jointInfo));
 
-	m_pendulum->setLinearDamping(0.1f);
+	m_pendulum->setLinearDamping(0.f);
 }
 
 
@@ -163,7 +157,7 @@ void Simulation::Update(float deltaTime)
 	m_pendulum->applyForceToCenterOfMass(forcesOnPendulum.attraction);
 
 	// exaggerate for more visible effect;
-	constexpr float torqueStrenthModifer = 1.f;
+	constexpr float torqueStrenthModifer = 4.f;
 	m_pendulum->applyTorque(forcesOnPendulum.torque * torqueStrenthModifer);
 
 
