@@ -108,7 +108,7 @@ Simulation::Simulation()
 	, m_ferroMagnetShape(sf::Vector2f(50.f,50.f))
 	, m_pendulumShape(sf::Vector2f(50.f, 50.f))
 	, m_pendulumAnchorShape(20.f)
-	, m_pendulumMagneticStrength(40.f)
+	, m_pendulumMagneticStrength(100.f)
 	, m_ferroMagnetMagnetizationVector(RadiansToVectorRotateInZAxis(DegreesToRadians(30.f)))
 {
 }
@@ -132,7 +132,7 @@ void Simulation::Init()
 		rp3d::Vector3( pendulumAnchorPostion.x, pendulumAnchorPostion.y,0.f), rp3d::Vector3(0.f, 0.f, 1.f));
 	m_pendulumJoint = static_cast<rp3d::HingeJoint*>(m_world.createJoint(jointInfo));
 
-	m_pendulum->setLinearDamping(0);
+	m_pendulum->setLinearDamping(0.1f);
 }
 
 
@@ -148,36 +148,85 @@ void Simulation::Update(float deltaTime)
 	// update Pendulum
 	const float FerroMagneticStrengthSq = m_ferroMagnetMagnetizationVector.lengthSquare();
 	const float FerroMagneticStrength = std::sqrt(FerroMagneticStrengthSq);
+	const rp3d::Vector3 FerroMagnetDir = m_ferroMagnetMagnetizationVector / FerroMagneticStrength;
 	AttractionAndTorque forcesOnPendulum = CalcFerroMagnetAttractionAndTorque(pendulumPosition,
 		pendulumMagnetizationDirection, m_pendulumMagneticStrength,
-		m_ferroMagnetPosition, m_ferroMagnetMagnetizationVector / FerroMagneticStrength, FerroMagneticStrength);
+		m_ferroMagnetPosition, FerroMagnetDir, FerroMagneticStrength);
 	
 	m_pendulum->applyForceToCenterOfMass(forcesOnPendulum.attraction);
-	m_pendulum->applyTorque(forcesOnPendulum.torque);
+
+	// exaggerate for more visible effect;
+	constexpr float torqueStrenthModifer = 4.f;
+	m_pendulum->applyTorque(forcesOnPendulum.torque * torqueStrenthModifer);
 
 	// ferromagnet
 	const rp3d::Vector3 pendulumMagnetizationVector = pendulumMagnetizationDirection * m_pendulumMagneticStrength;
 	const float distancePendulumFerroSq = (pendulumPosition - m_ferroMagnetPosition).lengthSquare();
+	const float distancePendulumFerro = std::sqrt(distancePendulumFerroSq);
 	// the nearer it is the more effect it has
-	const float pendulumMagnetisationEffect = 1 / (1 + distancePendulumFerroSq);
+	const float pendulumMagnetisationEffect = 1 / (1 + distancePendulumFerro);
 
 	// how much the ferromagnet wants to change, the more magnetized the less he wants to change
-	const float ferroMagnetizationChangeRate = 1/ (1 + (FerroMagneticStrength));
+	const float ferroMagnetizationChangeRate = 1 / (1 + (FerroMagneticStrength));
 
 	const rp3d::Vector3 ferroMagnetizationDir = m_ferroMagnetMagnetizationVector / FerroMagneticStrength;
 	const float currentFerroAngleRad = VectorZAxisRotationInRadians(ferroMagnetizationDir);
 	const float pendulumMagnetizationAngleRad = VectorZAxisRotationInRadians(pendulumMagnetizationDirection);
 
-	constexpr float LearnRateModifer = 1.f;
+	const float PendulumSpeed = m_pendulum->getLinearVelocity().length();
 
-	float totalChangeRate = pendulumMagnetisationEffect * ferroMagnetizationChangeRate * deltaTime * LearnRateModifer;
+	// e^-inf = 0 so we get 1
+	// e^0 = 1 so we get 0
+	const float speedModifier = 1.f - std::exp(-PendulumSpeed);
 
 
-	// mix, old vector with new Vector
-	m_ferroMagnetMagnetizationVector = 
-			(m_ferroMagnetMagnetizationVector * (1 - totalChangeRate))
-		+	(pendulumMagnetizationVector)	* (totalChangeRate);
+	// if positive we expect to have an increase in magnetization
+	// if negative we expect to have a decrease in magnetization
+	// actual value has no real meaning besides this
+	float magnetizationIncrease = pendulumMagnetizationDirection.dot(FerroMagnetDir);
 
+	// clamp to remove dot product round errors
+	assert(-1.001f <= magnetizationIncrease && magnetizationIncrease <= 1.001f);
+	magnetizationIncrease = std::max(-1.f, std::min(magnetizationIncrease, 1.f));
+
+
+	// is 1 if magnetizationIncrease,
+	// over 1 if it is an increase so it magnetizes faster,
+	// lower than one if decrease so it demagnetizes slower
+	// is never negative
+	// times 3 so we are more curvy
+	// just add 1 so we are in the range form 0 - 2, the divived by 2
+	const float hysteresisModifier = (std::pow(magnetizationIncrease, 3) + 1.f) / 2.f;
+	assert(0.f <= hysteresisModifier && hysteresisModifier <= 2.f);
+
+
+	assert(0.f <= pendulumMagnetisationEffect && pendulumMagnetisationEffect <= 1.f);
+	assert(0.f <= ferroMagnetizationChangeRate && ferroMagnetizationChangeRate <= 1.f);
+	assert(0.f <= hysteresisModifier && hysteresisModifier <= 1.f);
+	assert(0.f <= speedModifier && speedModifier <= 1.f);
+
+
+	//const float SummedModiersMultiplicative = 1.f
+	//	* (1.f + pendulumMagnetisationEffect)
+	//	* (1.f + ferroMagnetizationChangeRate) 
+	//	* (1.f + hysteresisModifier) 
+	//	* (1.f + speedModifier)
+	//	;
+
+	const float SummedModiersAdditive = 1.f 
+		+ pendulumMagnetisationEffect 
+		+ ferroMagnetizationChangeRate
+		+ hysteresisModifier 
+		+ speedModifier
+		;
+
+	constexpr float LearnRateModifer = 0.01f;
+	float totalChangeRate = SummedModiersAdditive * deltaTime * LearnRateModifer;
+
+
+
+	m_ferroMagnetMagnetizationVector = (m_ferroMagnetMagnetizationVector * (1 - totalChangeRate))
+		                             + (pendulumMagnetizationVector)     * (totalChangeRate);
 
 	m_world.update(deltaTime);
 
